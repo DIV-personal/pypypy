@@ -768,129 +768,73 @@ class DungeonMap(AbstractGrid):
     """
     Represents the entity statistics in a grid. Inherits from AbstractGrid.
     """
-    def __init__(self, master: tk.Tk | tk.Frame, dimensions: Position[int], size: Position[int], **kwargs) -> None:
-        super().__init__(master, dimensions, size, **kwargs)
-    
-    def redraw(self, tiles: list[list[Tile]], player_position: Position, slugs: dict[Position, Slug]) -> None:
+    def __init__(self,
+        master: Union[tk.Tk, tk.Frame],
+        dimensions: tuple[int, int],
+        size: tuple[int, int],
+        **kwargs,) -> None:
         """
-        Redraws the dungeon map based on the current state of the game
+        Initialize the DungeonMap which displays the dungeon grid.
+
+        Args:
+            root (tk.Tk): The parent window.
+            width (int): The width of the dungeon grid.
+            height (int): The height of the dungeon grid.
+        """
+        super().__init__(master, dimensions, size, **kwargs,)
+    
+    def redraw(self, tiles: list[list], player_position: tuple[int, int], slugs: dict) -> None:
+        """
+        Redraw the dungeon based on the tiles, player position, and slugs.
 
         Arguments:
-            -tiles: A list of Tile objects representing the game grid
-            -player_position: The current position of the player
-            -slugs: A dictionary of positions and their corresponding slug 
-            entities
+            tiles (list[list]): 2D list of Tile objects representing the dungeon.
+            player_position (tuple): Current position of the player in the dungeon.
+            slugs (dict): Dictionary of slug positions and their instances.
         """
         self.clear()
 
-        # Running through the grid to draw the tiles
-        for row in range(len(tiles)):
-            for col in range(len(tiles[row])):
-                tile = tiles[row][col]
+        # Draw the dungeon tiles
+        for row_idx, row in enumerate(tiles):
+            for col_idx, tile in enumerate(row):
+                self._draw_tile(row_idx, col_idx, tile)
 
-                # Determine the color based on tile type
-                if tile == '#':  # Wall
-                    color = WALL_COLOUR
-                elif tile == 'G':  # Goal
-                    color = GOAL_COLOUR
-                else:  # Floor tile
-                    color = FLOOR_COLOUR
+        # Draw the player
+        self.draw_entity(player_position, "Player", PLAYER_COLOUR)
 
-                # Draw the rectangle representing the tile
-                self._draw_rectangle(row, col, color)
-
-        
-
-    # def __init__(self, master: tk.Tk | tk.Frame, dimensions: Position, 
-    #             size: Position, **kwargs) -> None:
-    #     """
-    #     Initializes the Dungeon Map
-
-    #     Arguments:
-    #         - master: The root or frame where this widget is packed
-    #         - dimensions: Number of rows and columns in the grid
-    #         - size: Pixel size for width and height of the grid
-    #     """
-    #     super().__init__(master, dimensions, size, **kwargs)
+        # Draw the slugs
+        for slug_position, slug in slugs.items():
+            slug_color = SLUG_COLOUR if not Slug.can_move() else "light pink"
+            self.draw_entity(slug_position, Slug.get_name(), slug_color)
     
-    # def _draw_rectangle(self, row: int, col: int, color: str) -> None:
-    #     """
-    #     Draws a single tile on the grid.
+    def draw_tile(self, row: int, col: int, tile) -> None:
+        """
+        Draw an individual tile on the dungeon map.
 
-    #     Args:
-    #     - row: The row of the tile.
-    #     - col: The column of the tile.
-    #     - color: The color to fill the tile.
-    #     """
-    #     bbox = self.get_bbox((row, col))  # Get the bounding box for this cell
-    #     self.create_rectangle(bbox, fill = color, outline = color)  # Draw the tile
+        Args:
+            row (int): The row of the tile.
+            col (int): The column of the tile.
+            tile: The tile object to be drawn.
+        """
+        # Draw the tile using its symbol and color it based on blocking status
+        color = "black" if Tile.is_blocking() else "white"
+        self.create_rectangle(col, row, col + 1, row + 1, fill=color)
+        if Tile.get_weapon():
+            self.create_text(col + 0.5, row + 0.5, text=Tile.get_weapon(), fill="red")
+
     
-    # def _draw_oval(self, position: 'Position', symbol: str, color: str) -> None:
-    #     """
-    #     Draws an oval (entity) at a given position on the grid.
+    def draw_entity(self, position: tuple[int, int], name: str, color: str) -> None:
+        """
+        Draw an entity (player or slug) on the dungeon map.
 
-    #     Args:
-    #     - position: The position of the entity (row, column).
-    #     - symbol: The symbol representing the entity (e.g., "P" for player).
-    #     - color: The color of the oval.
-    #     """
-    #     bbox = self.get_bbox(position)  # Get the bounding box for the position
-    #     self.create_oval(bbox, fill=color)  # Draw the oval
-    #     self.annotate_position(position, symbol)  # Add the symbol (text) inside the oval
-
-    # def _draw_weapon_symbol(self, row: int, col: int, symbol: str) -> None:
-    #     """
-    #     Draws the weapon symbol at the specified row and column.
-
-    #     Args:
-    #     - row: The row of the tile.
-    #     - col: The column of the tile.
-    #     - symbol: The symbol representing the weapon.
-    #     """
-    #     self.annotate_position((row, col), symbol)  # Add the weapon symbol    
-
-    # def redraw(self, tiles: list[list["Tile"]], player_position: "Position", 
-    #            slugs: dict["Position", "Slug"]) -> None:
-    #     """
-    #     Redraws the dungeon map based on the current state of the game
-
-    #     Arguments:
-    #         -tiles: A list of Tile objects representing the game grid
-    #         -player_position: The current position of the player
-    #         -slugs: A dictionary of positions and their corresponding slug 
-    #         entities
-    #     """
-        
-    #     self.clear()
-
-    #     #Draw all the tiles
-    #     for row in range(len(tiles)):
-    #         for col in range(len(tiles[row])):
-    #             tile = tiles[row][col]
-
-    #             #Determine color based on the type of tile
-    #             if tile.is_blocking():
-    #                 color = WALL_COLOUR
-    #             elif str(tile) == GOAL_TILE:
-    #                 color = GOAL_COLOUR
-    #             else:
-    #                 color = FLOOR_COLOUR
-
-    #             #Draw the rectangle (tile) on the grid
-    #             self._draw_rectangle(row, col, color)
-
-    #             #Check if there is a weapon on this tile
-    #             weapon = tile.get_weapon()
-    #             if weapon:
-    #                 self._draw_weapon_symbol(row, col, weapon.get_symbol())
-
-    #     #Draw the player as a blue oval
-    #     self._draw_oval(player_position, PLAYER_SYMBOL, PLAYER_COLOUR)
-
-    #     #Draw all slugs
-    #     for slug_position, slug in slugs.items():
-    #         color = "lightpink" if slug.can_move() else SLUG_COLOUR
-    #         self._draw_oval(slug_position, slug.get_symbol(), color)
+        Args:
+            position (tuple): Position of the entity.
+            name (str): Name of the entity.
+            color (str): Color to represent the entity.
+        """
+        row, col = position
+        self.create_oval(col, row, col + 1, row + 1, fill=color)
+        self.create_text(col + 0.5, row + 0.5, text=name)
 
 class DungeonInfo(AbstractGrid):
     """
@@ -899,7 +843,11 @@ class DungeonInfo(AbstractGrid):
 
     Inherits from AbstractGrid (provided in support.py)
     """
-    def __init__(self, master: tk.Tk | tk.Frame, dimensions: Position, size: Position, **kwargs) -> None:
+    def __init__(self,
+        master: Union[tk.Tk, tk.Frame],
+        dimensions: tuple[int, int],
+        size: tuple[int, int],
+        **kwargs) -> None:
         """
         Initializes the DungeonInfo.
 
@@ -910,67 +858,31 @@ class DungeonInfo(AbstractGrid):
         """
         super().__init__(master, dimensions, size, **kwargs)
     
-    def _draw_header(self) -> None:
+    def redraw(self, entities: dict) -> None:
         """
-        Draws the header row with column titles
+        Redraw the DungeonInfo with updated entity information.
+
+        Args:
+            entities (dict): A dictionary of entity positions and entity instances.
         """
-        headers = ["Name", "Position", "Weapon", "Health", "Poison"]
-        for col, header in enumerate(headers):
-            self.annotate_position((0, col), header)
-
-    def _draw_entity_info(self, row: int, name: str, position: 'Position', weapon: 'Weapon', health: int, poison: int) -> None:
-        """
-        Draws entity information in a specific row of the grid.
-
-        Arguments:
-        - row: The row number to place the information.
-        - name: The name of the entity (Player or Slug).
-        - position: The position of the entity in the dungeon.
-        - weapon: The weapon the entity is holding (or None).
-        - health: The health stat of the entity.
-        - poison: The poison stat of the entity.
-        """
-        # Display entity's name
-        self.annotate_position((row, 0), name)
-
-        # Display entity's position as a string
-        self.annotate_position((row, 1), str(position))
-
-        # Display weapon (if any), otherwise "None"
-        weapon_name = weapon.get_name() if weapon else "None"
-        self.annotate_position((row, 2), weapon_name)
-
-        # Display health and poison stats
-        self.annotate_position((row, 3), str(health))
-        self.annotate_position((row, 4), str(poison))
-
-    def redraw(self, entities: dict['Position', 'Entity']) -> None:
-        """
-        Redraws the entity information, including the player's and slugs' details.
-
-        Arguments:
-        - entities: A dictionary where the key is the position and the value is the entity (Player or Slug).
-        """
-        # Clear any existing content
         self.clear()
+        
+        # Draw the table header
+        headers = ["Name", "Position", "Weapon", "Health", "Poison"]
+        for col_idx, header in enumerate(headers):
+            self.create_text(col_idx + 0.5, 0.5, text=header, font=("Arial", 14))
 
-        # Draw the header row
-        self._draw_header()
-
-        # Start at row 1 for entity data (row 0 is the header)
-        row = 1
-
-        # Iterate through entities and display their information
-        for position, entity in entities.items():
-            # Extract entity information
-            name = entity.get_name()
-            weapon = entity.get_weapon()
-            health = entity.get_health()
-            poison = entity.get_poison()
-            
-            # Draw the information in the grid
-            self._draw_entity_info(row, name, position, weapon, health, poison)
-            row += 1
+        # Draw the entity info
+        for row_idx, (position, entity) in enumerate(entities.items(), start=1):
+            entity_info = [
+                Entity.get_name,
+                position,
+                Entity.get_weapon() if Entity.get_weapon() else "None",
+                Entity.get_health(),
+                Entity.get_poison()
+            ]
+            for col_idx, info in enumerate(entity_info):
+                self.create_text(col_idx + 0.5, row_idx + 0.5, text=str(info))
 
 class ButtonPanel(tk.Frame):
     """
@@ -985,39 +897,157 @@ class ButtonPanel(tk.Frame):
         - on_load: The function to call when the Load Game button is clicked.
         - on_quit: The function to call when the Quit button is clicked.
     """
-    def __init__(self, root, on_load, on_quit):
+    def __init__(self, root: tk.Tk, on_load: callable, on_quit: callable) -> None:
         """
-        Initialize the ButtonPanel with 'Load Game' and 'Quit' buttons.
-        :param root: The parent widget.
-        :param on_load: The command to execute when the 'Load Game' button is pressed.
-        :param on_quit: The command to execute when the 'Quit' button is pressed.
+        Initialize the ButtonPanel with two buttons: 'Load Game' and 'Quit Game'.
+
+        Args:
+            root (tk.Tk): The parent window.
+            on_load (callable): The function to call when the 'Load Game' button is pressed.
+            on_quit (callable): The function to call when the 'Quit Game' button is pressed.
         """
         super().__init__(root)
-        self.load_button = tk.Button(self, text="Load Game", command=on_load)
-        self.load_button.pack(side="left", padx=10, pady=10)
+        
+        # Create the 'Load Game' button
+        load_button = tk.Button(self, text="Load Game", command=on_load)
+        load_button.pack(side="left", padx=20, pady=10)
 
-        self.quit_button = tk.Button(self, text="Quit", command=on_quit)
-        self.quit_button.pack(side="right", padx=10, pady=10)
+        # Create the 'Quit Game' button
+        quit_button = tk.Button(self, text="Quit", command=on_quit)
+        quit_button.pack(side="right", padx=20, pady=10)
 
-class SlugDungeon():
+class SlugDungeon(): 
     """
     SlugDungeon is the controller for the game
     """
+    def __init__(self, root: tk.Tk, filename: str) -> None:
+        """
+        Initialize the controller for the Slug Dungeon game.
 
-    pass
+        Args:
+            root (tk.Tk): The root window for the GUI.
+            filename (str): The file path to load the game model from.
+        """
+        self._root = root
+        self._model = load_level(filename)
+
+        dimensions = self._model.get_dimensions()
+
+
+        # Initialize the DungeonMap, DungeonInfo, and ButtonPanel
+        self._dungeon_map = DungeonMap(root, dimensions, DUNGEON_MAP_SIZE)
+
+        # self._dungeon_map.grid(row=0, col=0)
+
+        self._slug_info = DungeonInfo(root, dimensions, SLUG_INFO_SIZE)
+
+        # self._slug_info.grid(row=0, column=0)
+
+        self._player_info = DungeonInfo(self._root, row=7, width=400, height=500)
+        self._player_info.grid(row=0, column=0)
+
+        self.button_panel = ButtonPanel(self._root, on_load=self.load_level, on_quit=self.quit_game)
+        self.button_panel.grid(row=2, column=0, columnspan=2, pady=10)
+
+        # Bind the key press event
+        self._root.bind("<Key>", self.handle_key_press)
+
+        # Redraw the view for the first time
+        self.redraw()
+
+    def redraw(self) -> None:
+        """
+        Redraw the view components based on the current state of the model.
+        """
+        tiles = self._model.get_tiles()
+        slugs = self._model.get_slugs()
+        player_position = self._model.get_player_position()
+
+        # Redraw the dungeon map
+        self._dungeon_map.redraw(tiles, player_position, slugs)
+
+        # Update the slug info
+        self._slug_info.redraw(slugs)
+
+        # Update the player info
+        self._player_info.redraw({player_position: self._model.get_player()})
+
+    def handle_key_press(self, event: tk.Event) -> None:
+        """
+        Handle the player's key press to move the player or take an action.
+
+        Args:
+            event (tk.Event): The key press event.
+        """
+        key = event.keysym
+        position_delta = POSITION_DELTAS
+
+        # Map keys to movement directions
+        if key == "w":
+            position_delta = (-1, 0)  # Move up
+        elif key == "s":
+            position_delta = (1, 0)  # Move down
+        elif key == "a":
+            position_delta = (0, -1)  # Move left
+        elif key == "d":
+            position_delta = (0, 1)  # Move right
+        elif key == "space":
+            position_delta = (0, 0)  # Stay in place (attack)
+
+        if position_delta is not None:
+            # Handle the player move
+            self.model.handle_player_move(position_delta)
+            self.redraw()
+
+            # Check for game over conditions
+            if self.model.has_won():
+                self.end_game("You won! Play again?")
+            elif self.model.has_lost():
+                self.end_game("You lost! Play again?")
+
+    def end_game(self, message: str) -> None:
+        """
+        Display a game-over message and prompt the user to play again.
+
+        Args:
+            message (str): The message to display.
+        """
+        play_again = messagebox.askyesno("Game Over", message)
+        if play_again:
+            self.model = load_level(self.model.filename)
+            self.redraw()
+        else:
+            self._root.quit()
+
+    def load_level(self) -> None:
+        """
+        Prompt the user to select a new level file to load.
+        """
+        file_path = filedialog.askopenfilename(title="Select a game level", filetypes=[("Text files", "*.txt")])
+        if file_path:
+            self.model = load_level(file_path)
+            self.redraw()
+
+    def quit_game(self) -> None:
+        """
+        Quit the game.
+        """
+        self._root.quit()
 
 def play_game(root: tk.Tk, file_path: str) -> None:
     """
-    Initialize and start the game by creating the controller and loading the 
-    level file
+    Play the game by initializing the SlugDungeon controller.
 
     Arguments:
         - root (tk.Tk): The Tkinter root window
         - file_path(str): The file to the initial game level
 
     """
+
     root.title("Slug Dungeon")
- 
+
+    SlugDungeon(root, file_path)
+
     root.mainloop()
 
 def main() -> None:
@@ -1027,7 +1057,7 @@ def main() -> None:
     """
     root = tk.Tk()
 
-    file_path = "levels.level1.txt"
+    file_path = "levels/level1.txt"
 
     play_game(root, file_path)
 
